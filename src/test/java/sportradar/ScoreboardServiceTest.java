@@ -13,7 +13,8 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 
 class ScoreboardServiceTest {
 
-    ScoreboardService service;
+    private ScoreboardService service;
+
     @BeforeEach
     void setUp() {
         service = new ScoreboardService();

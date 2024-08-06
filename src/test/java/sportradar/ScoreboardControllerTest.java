@@ -17,8 +17,8 @@ import static org.mockito.Mockito.when;
 
 class ScoreboardControllerTest {
 
-    ScoreboardController controller;
-    ScoreboardService service;
+    private ScoreboardController controller;
+    private ScoreboardService service;
 
     @BeforeEach
     void setUp() {
