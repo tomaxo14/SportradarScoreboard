@@ -111,7 +111,7 @@ class ScoreboardControllerTest {
     }
 
     @Test
-    void finishMatch_AlreadyUpdatedMatchWasDeletedFromOngoingMatches() throws IdNotFoundException {
+    void finishMatch_AlreadyUpdatedMatchWasDeletedFromOngoingMatches() throws NegativeScoreException, IdNotFoundException {
         Match startedMatch = controller.startMatch("Poland", "France");
         int startedMatchId = startedMatch.id();
         controller.updateScore(startedMatchId, 1, 2);

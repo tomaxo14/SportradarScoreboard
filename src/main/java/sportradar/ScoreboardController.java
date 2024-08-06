@@ -6,6 +6,8 @@ import java.util.Comparator;
 import java.util.List;
 import java.util.Optional;
 
+import sportradar.exception.IdNotFoundException;
+import sportradar.exception.NegativeScoreException;
 import sportradar.model.Match;
 import sportradar.model.Team;
 
@@ -30,10 +32,10 @@ public class ScoreboardController {
         return newMatch;
     }
 
-    public Match updateScore(int matchId, int homeTeamScore, int awayTeamScore) throws Exception {
+    public Match updateScore(int matchId, int homeTeamScore, int awayTeamScore) throws NegativeScoreException, IdNotFoundException {
 
         if (homeTeamScore < 0 || awayTeamScore < 0) {
-            throw new Exception("You cannot pass negative numbers as a score");
+            throw new NegativeScoreException("You cannot pass negative numbers as a score");
         }
 
         Optional<Match> optionalMatchToUpdate = ongoingMatches.stream().filter(match -> match.id() == matchId).findFirst();
@@ -42,7 +44,7 @@ public class ScoreboardController {
             matchToUpdate = optionalMatchToUpdate.get();
             ongoingMatches.remove(matchToUpdate);
         } else {
-            throw new Exception("Match with given ID not found");
+            throw new IdNotFoundException("Match with given ID not found");
         }
         matchToUpdate.homeTeamGoals(homeTeamScore);
         matchToUpdate.awayTeamGoals(awayTeamScore);
@@ -51,13 +53,13 @@ public class ScoreboardController {
         return matchToUpdate;
     }
 
-    public List<Match> finishMatch(int matchId) throws Exception {
+    public List<Match> finishMatch(int matchId) throws IdNotFoundException {
         Optional<Match> optionalMatchToDelete = ongoingMatches.stream().filter(match -> match.id() == matchId).findFirst();
 
         if (optionalMatchToDelete.isPresent()) {
             ongoingMatches.remove(optionalMatchToDelete.get());
         } else {
-            throw new Exception("Match with given ID not found");
+            throw new IdNotFoundException("Match with given ID not found");
         }
 
         if (ongoingMatches.isEmpty()) {
