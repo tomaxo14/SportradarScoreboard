@@ -5,164 +5,117 @@ import org.junit.jupiter.api.Test;
 import sportradar.exception.IdNotFoundException;
 import sportradar.exception.NegativeScoreException;
 import sportradar.model.Match;
+import sportradar.model.Team;
 
+import java.time.LocalDateTime;
 import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.*;
+import static org.mockito.ArgumentMatchers.*;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
 
 class ScoreboardControllerTest {
 
     ScoreboardController controller;
+    ScoreboardService service;
+
     @BeforeEach
     void setUp() {
-        controller = new ScoreboardController();
+        service = mock(ScoreboardService.class);
+        controller = new ScoreboardController(service);
     }
 
     @Test
-    void startMatch_ReturnsZeroToZeroScore() {
-        Match startedMatch = controller.startMatch("Poland", "France");
+    void startMatch_PassesResultFromService() {
+        Match matchToReturn = Match.builder()
+                .id(1)
+                .homeTeam(new Team("Poland"))
+                .awayTeam(new Team("France"))
+                .homeTeamGoals(0)
+                .awayTeamGoals(0)
+                .startDateTime(LocalDateTime.of(2024, 8, 6, 22, 30))
+                .build();
 
-        assertEquals(0, startedMatch.homeTeamGoals());
-        assertEquals(0, startedMatch.awayTeamGoals());
+        when(service.startMatch(anyString(), anyString())).thenReturn(matchToReturn);
+        Match resultFromController = controller.startMatch("Poland", "France");
+
+        assertEquals(matchToReturn, resultFromController);
     }
 
     @Test
-    void startMatch_ReturnsTeamsWithCorrectNames() {
-        Match startedMatch = controller.startMatch("Poland", "France");
+    void updateScore_PassesResultFromService() throws NegativeScoreException, IdNotFoundException {
+        Match matchToReturn = Match.builder()
+                .id(1)
+                .homeTeam(new Team("Poland"))
+                .awayTeam(new Team("France"))
+                .homeTeamGoals(1)
+                .awayTeamGoals(2)
+                .startDateTime(LocalDateTime.of(2024, 8, 6, 22, 30))
+                .build();
 
-        assertEquals("Poland", startedMatch.homeTeam().name());
-        assertEquals("France", startedMatch.awayTeam().name());
+        when(service.updateScore(anyInt(), anyInt(), anyInt())).thenReturn(matchToReturn);
+        Match resultFromController = controller.updateScore(1, 1, 2);
+
+        assertEquals(matchToReturn, resultFromController);
+    }
+
+
+    @Test
+    void finishMatch_PassesResultFromService() throws IdNotFoundException {
+        Match matchToReturn1 = Match.builder()
+                .id(1)
+                .homeTeam(new Team("Poland"))
+                .awayTeam(new Team("France"))
+                .homeTeamGoals(1)
+                .awayTeamGoals(2)
+                .startDateTime(LocalDateTime.of(2024, 8, 6, 22, 30))
+                .build();
+
+        Match matchToReturn2 = Match.builder()
+                .id(2)
+                .homeTeam(new Team("Argentina"))
+                .awayTeam(new Team("Spain"))
+                .homeTeamGoals(3)
+                .awayTeamGoals(0)
+                .startDateTime(LocalDateTime.of(2024, 8, 6, 22, 31))
+                .build();
+
+        List<Match> matchesToReturn = List.of(matchToReturn1, matchToReturn2);
+
+        when(service.finishMatch(anyInt())).thenReturn(matchesToReturn);
+        List<Match> resultFromController = controller.finishMatch(3);
+
+        assertEquals(matchesToReturn, resultFromController);
     }
 
     @Test
-    void startMatch_MatchWasAddedToOngoingMatches() {
-        Match startedMatch = controller.startMatch("Poland", "France");
-        List<Match> ongoingMatches = controller.showOngoingMatches();
+    void showOngoingMatches_PassesResultFromService() {
+        Match matchToReturn1 = Match.builder()
+                .id(1)
+                .homeTeam(new Team("Poland"))
+                .awayTeam(new Team("France"))
+                .homeTeamGoals(1)
+                .awayTeamGoals(2)
+                .startDateTime(LocalDateTime.of(2024, 8, 6, 22, 30))
+                .build();
 
-        assertTrue(ongoingMatches.contains(startedMatch));
+        Match matchToReturn2 = Match.builder()
+                .id(2)
+                .homeTeam(new Team("Argentina"))
+                .awayTeam(new Team("Spain"))
+                .homeTeamGoals(3)
+                .awayTeamGoals(0)
+                .startDateTime(LocalDateTime.of(2024, 8, 6, 22, 31))
+                .build();
+
+        List<Match> matchesToReturn = List.of(matchToReturn1, matchToReturn2);
+
+        when(service.showOngoingMatches()).thenReturn(matchesToReturn);
+        List<Match> resultFromController = controller.showOngoingMatches();
+
+        assertEquals(matchesToReturn, resultFromController);
     }
 
-    @Test
-    void updateScore_ReturnsCorrectScore() throws NegativeScoreException, IdNotFoundException {
-        Match startedMatch = controller.startMatch("Poland", "France");
-        Match updatedMatch = controller.updateScore(startedMatch.id(), 1, 2);
 
-        assertEquals(1, updatedMatch.homeTeamGoals());
-        assertEquals(2, updatedMatch.awayTeamGoals());
-    }
-
-    @Test
-    void updateScore_MatchWasUpdatedInOngoingMatches() throws NegativeScoreException, IdNotFoundException {
-        Match startedMatch = controller.startMatch("Poland", "France");
-        int startedMatchId = startedMatch.id();
-
-        controller.updateScore(startedMatchId, 1, 2);
-        List<Match> matchesById = controller.showOngoingMatches().stream()
-                .filter(match -> match.id() == startedMatchId).toList();
-
-        assertEquals(1, matchesById.size());
-        assertEquals(1, matchesById.get(0).homeTeamGoals());
-        assertEquals(2, matchesById.get(0).awayTeamGoals());
-    }
-
-    @Test
-    void updateScore_ReturnsErrorWhenNegativeScore() {
-        Match startedMatch = controller.startMatch("Poland", "France");
-
-        Exception exception = assertThrows(NegativeScoreException.class, () -> controller.updateScore(startedMatch.id(), -1, 2));
-        assertEquals("You cannot pass negative numbers as a score", exception.getMessage());
-    }
-
-    @Test
-    void updateScore_DoesNotChangeOngoingMatchWhenNegativeScore() throws NegativeScoreException, IdNotFoundException {
-        Match startedMatch = controller.startMatch("Poland", "France");
-        int startedMatchId = startedMatch.id();
-
-        controller.updateScore(startedMatchId, 1, 1);
-
-        assertThrows(NegativeScoreException.class, () -> controller.updateScore(startedMatchId, -1, 2));
-
-        List<Match> matchesById = controller.showOngoingMatches().stream()
-                .filter(match -> match.id() == startedMatchId).toList();
-
-        assertEquals(1, matchesById.size());
-        assertEquals(1, matchesById.get(0).homeTeamGoals());
-        assertEquals(1, matchesById.get(0).awayTeamGoals());
-    }
-
-    @Test
-    void updateScore_ReturnErrorWhenWrongId() {
-        Match startedMatch = controller.startMatch("Poland", "France");
-
-        Exception exception = assertThrows(IdNotFoundException.class, () -> controller.updateScore(startedMatch.id() + 1, 1, 2));
-        assertEquals("Match with given ID not found", exception.getMessage());
-    }
-
-    @Test
-    void finishMatch_MatchWasDeletedFromOngoingMatches() throws IdNotFoundException {
-        Match startedMatch = controller.startMatch("Poland", "France");
-        int startedMatchId = startedMatch.id();
-        controller.finishMatch(startedMatchId);
-
-        List<Match> matchesById = controller.showOngoingMatches().stream()
-                .filter(match -> match.id() == startedMatchId).toList();
-
-        assertEquals(0, matchesById.size());
-    }
-
-    @Test
-    void finishMatch_AlreadyUpdatedMatchWasDeletedFromOngoingMatches() throws NegativeScoreException, IdNotFoundException {
-        Match startedMatch = controller.startMatch("Poland", "France");
-        int startedMatchId = startedMatch.id();
-        controller.updateScore(startedMatchId, 1, 2);
-        controller.finishMatch(startedMatchId);
-        List<Match> matchesById = controller.showOngoingMatches().stream()
-                .filter(match -> match.id() == startedMatchId).toList();
-
-        assertEquals(0, matchesById.size());
-    }
-
-    @Test
-    void finishMatch_ReturnErrorWhenWrongId() {
-        Match startedMatch = controller.startMatch("Poland", "France");
-
-        Exception exception = assertThrows(IdNotFoundException.class, () -> controller.finishMatch(startedMatch.id() + 1));
-        assertEquals("Match with given ID not found", exception.getMessage());
-    }
-
-    @Test
-    void showOngoingMatches_ReturnsMatchesOrderedByTotalScoreAndStartTime() throws NegativeScoreException, IdNotFoundException {
-        Match firstStartedMatch = controller.startMatch("Poland", "France");
-        Match secondStartedMatch = controller.startMatch("Spain", "Brazil");
-        Match thirdStartedMatch = controller.startMatch("Argentina", "England");
-
-        int firstId = firstStartedMatch.id();
-        int secondId = secondStartedMatch.id();
-        int thirdId = thirdStartedMatch.id();
-
-        controller.updateScore(firstId, 1, 2);
-        controller.updateScore(secondId, 4, 0);
-        controller.updateScore(thirdId, 0, 3);
-
-        List<Match> ongoingMatches = controller.showOngoingMatches();
-
-        assertEquals(secondId, ongoingMatches.get(0).id());
-        assertEquals(thirdId, ongoingMatches.get(1).id());
-        assertEquals(firstId, ongoingMatches.get(2).id());
-    }
-
-    @Test
-    void showOngoingMatches_ReturnsEmptyListWhenAllMatchesAreFinished() throws IdNotFoundException {
-        Match firstStartedMatch = controller.startMatch("Poland", "France");
-        Match secondStartedMatch = controller.startMatch("Spain", "Brazil");
-        Match thirdStartedMatch = controller.startMatch("Argentina", "England");
-
-        controller.finishMatch(firstStartedMatch.id());
-        controller.finishMatch(secondStartedMatch.id());
-        controller.finishMatch(thirdStartedMatch.id());
-
-        List<Match> ongoingMatches = controller.showOngoingMatches();
-
-        assertEquals(0, ongoingMatches.size());
-    }
 }
