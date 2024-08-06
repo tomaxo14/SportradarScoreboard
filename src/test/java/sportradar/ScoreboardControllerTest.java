@@ -2,6 +2,8 @@ package sportradar;
 
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import sportradar.exception.IdNotFoundException;
+import sportradar.exception.NegativeScoreException;
 import sportradar.model.Match;
 
 import java.util.List;
@@ -41,7 +43,7 @@ class ScoreboardControllerTest {
     }
 
     @Test
-    void updateScore_ReturnsCorrectScore() throws Exception {
+    void updateScore_ReturnsCorrectScore() throws NegativeScoreException, IdNotFoundException {
         Match startedMatch = controller.startMatch("Poland", "France");
         Match updatedMatch = controller.updateScore(startedMatch.id(), 1, 2);
 
@@ -50,7 +52,7 @@ class ScoreboardControllerTest {
     }
 
     @Test
-    void updateScore_MatchWasUpdatedInOngoingMatches() throws Exception {
+    void updateScore_MatchWasUpdatedInOngoingMatches() throws NegativeScoreException, IdNotFoundException {
         Match startedMatch = controller.startMatch("Poland", "France");
         int startedMatchId = startedMatch.id();
 
@@ -67,18 +69,18 @@ class ScoreboardControllerTest {
     void updateScore_ReturnsErrorWhenNegativeScore() {
         Match startedMatch = controller.startMatch("Poland", "France");
 
-        Exception exception = assertThrows(Exception.class, () -> controller.updateScore(startedMatch.id(), -1, 2));
+        Exception exception = assertThrows(NegativeScoreException.class, () -> controller.updateScore(startedMatch.id(), -1, 2));
         assertEquals("You cannot pass negative numbers as a score", exception.getMessage());
     }
 
     @Test
-    void updateScore_DoesNotChangeOngoingMatchWhenNegativeScore() throws Exception {
+    void updateScore_DoesNotChangeOngoingMatchWhenNegativeScore() throws NegativeScoreException, IdNotFoundException {
         Match startedMatch = controller.startMatch("Poland", "France");
         int startedMatchId = startedMatch.id();
 
         controller.updateScore(startedMatchId, 1, 1);
 
-        assertThrows(Exception.class, () -> controller.updateScore(startedMatchId, -1, 2));
+        assertThrows(NegativeScoreException.class, () -> controller.updateScore(startedMatchId, -1, 2));
 
         List<Match> matchesById = controller.showOngoingMatches().stream()
                 .filter(match -> match.id() == startedMatchId).toList();
@@ -92,12 +94,12 @@ class ScoreboardControllerTest {
     void updateScore_ReturnErrorWhenWrongId() {
         Match startedMatch = controller.startMatch("Poland", "France");
 
-        Exception exception = assertThrows(Exception.class, () -> controller.updateScore(startedMatch.id() + 1, 1, 2));
+        Exception exception = assertThrows(IdNotFoundException.class, () -> controller.updateScore(startedMatch.id() + 1, 1, 2));
         assertEquals("Match with given ID not found", exception.getMessage());
     }
 
     @Test
-    void finishMatch_MatchWasDeletedFromOngoingMatches() throws Exception {
+    void finishMatch_MatchWasDeletedFromOngoingMatches() throws IdNotFoundException {
         Match startedMatch = controller.startMatch("Poland", "France");
         int startedMatchId = startedMatch.id();
         controller.finishMatch(startedMatchId);
@@ -109,7 +111,7 @@ class ScoreboardControllerTest {
     }
 
     @Test
-    void finishMatch_AlreadyUpdatedMatchWasDeletedFromOngoingMatches() throws Exception {
+    void finishMatch_AlreadyUpdatedMatchWasDeletedFromOngoingMatches() throws IdNotFoundException {
         Match startedMatch = controller.startMatch("Poland", "France");
         int startedMatchId = startedMatch.id();
         controller.updateScore(startedMatchId, 1, 2);
@@ -124,12 +126,12 @@ class ScoreboardControllerTest {
     void finishMatch_ReturnErrorWhenWrongId() {
         Match startedMatch = controller.startMatch("Poland", "France");
 
-        Exception exception = assertThrows(Exception.class, () -> controller.finishMatch(startedMatch.id() + 1));
+        Exception exception = assertThrows(IdNotFoundException.class, () -> controller.finishMatch(startedMatch.id() + 1));
         assertEquals("Match with given ID not found", exception.getMessage());
     }
 
     @Test
-    void showOngoingMatches_ReturnsMatchesOrderedByTotalScoreAndStartTime() throws Exception {
+    void showOngoingMatches_ReturnsMatchesOrderedByTotalScoreAndStartTime() throws NegativeScoreException, IdNotFoundException {
         Match firstStartedMatch = controller.startMatch("Poland", "France");
         Match secondStartedMatch = controller.startMatch("Spain", "Brazil");
         Match thirdStartedMatch = controller.startMatch("Argentina", "England");
@@ -150,7 +152,7 @@ class ScoreboardControllerTest {
     }
 
     @Test
-    void showOngoingMatches_ReturnsEmptyListWhenAllMatchesAreFinished() throws Exception {
+    void showOngoingMatches_ReturnsEmptyListWhenAllMatchesAreFinished() throws IdNotFoundException {
         Match firstStartedMatch = controller.startMatch("Poland", "France");
         Match secondStartedMatch = controller.startMatch("Spain", "Brazil");
         Match thirdStartedMatch = controller.startMatch("Argentina", "England");
