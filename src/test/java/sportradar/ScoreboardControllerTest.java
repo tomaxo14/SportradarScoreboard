@@ -41,7 +41,7 @@ class ScoreboardControllerTest {
     }
 
     @Test
-    void updateScore_ReturnsCorrectScore() {
+    void updateScore_ReturnsCorrectScore() throws Exception {
         Match startedMatch = controller.startMatch("Poland", "France");
         Match updatedMatch = controller.updateScore(startedMatch.id(), 1, 2);
 
@@ -50,7 +50,7 @@ class ScoreboardControllerTest {
     }
 
     @Test
-    void updateScore_MatchWasUpdatedInOngoingMatches() {
+    void updateScore_MatchWasUpdatedInOngoingMatches() throws Exception {
         Match startedMatch = controller.startMatch("Poland", "France");
         int startedMatchId = startedMatch.id();
 
@@ -72,12 +72,13 @@ class ScoreboardControllerTest {
     }
 
     @Test
-    void updateScore_DoesNotChangeOngoingMatchWhenNegativeScore() {
+    void updateScore_DoesNotChangeOngoingMatchWhenNegativeScore() throws Exception {
         Match startedMatch = controller.startMatch("Poland", "France");
         int startedMatchId = startedMatch.id();
 
         controller.updateScore(startedMatchId, 1, 1);
-        controller.updateScore(startedMatchId, -1, 2);
+
+        assertThrows(Exception.class, () -> controller.updateScore(startedMatchId, -1, 2));
 
         List<Match> matchesById = controller.showOngoingMatches().stream()
                 .filter(match -> match.id() == startedMatchId).toList();
@@ -96,7 +97,7 @@ class ScoreboardControllerTest {
     }
 
     @Test
-    void finishMatch_MatchWasDeletedFromOngoingMatches() {
+    void finishMatch_MatchWasDeletedFromOngoingMatches() throws Exception {
         Match startedMatch = controller.startMatch("Poland", "France");
         int startedMatchId = startedMatch.id();
         controller.finishMatch(startedMatchId);
@@ -108,7 +109,7 @@ class ScoreboardControllerTest {
     }
 
     @Test
-    void finishMatch_AlreadyUpdatedMatchWasDeletedFromOngoingMatches() {
+    void finishMatch_AlreadyUpdatedMatchWasDeletedFromOngoingMatches() throws Exception {
         Match startedMatch = controller.startMatch("Poland", "France");
         int startedMatchId = startedMatch.id();
         controller.updateScore(startedMatchId, 1, 2);
@@ -128,7 +129,7 @@ class ScoreboardControllerTest {
     }
 
     @Test
-    void showOngoingMatches_ReturnsMatchesOrderedByTotalScoreAndStartTime() {
+    void showOngoingMatches_ReturnsMatchesOrderedByTotalScoreAndStartTime() throws Exception {
         Match firstStartedMatch = controller.startMatch("Poland", "France");
         Match secondStartedMatch = controller.startMatch("Spain", "Brazil");
         Match thirdStartedMatch = controller.startMatch("Argentina", "England");
@@ -149,7 +150,7 @@ class ScoreboardControllerTest {
     }
 
     @Test
-    void showOngoingMatches_ReturnsEmptyListWhenAllMatchesAreFinished() {
+    void showOngoingMatches_ReturnsEmptyListWhenAllMatchesAreFinished() throws Exception {
         Match firstStartedMatch = controller.startMatch("Poland", "France");
         Match secondStartedMatch = controller.startMatch("Spain", "Brazil");
         Match thirdStartedMatch = controller.startMatch("Argentina", "England");
