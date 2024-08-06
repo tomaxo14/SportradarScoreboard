@@ -13,19 +13,19 @@ import java.util.Optional;
 
 public class ScoreboardService {
 
-    private int idIterator = 0;
+    private int idCounter = 0;
     private final List<Match> ongoingMatches = new ArrayList<>();
 
     public Match startMatch(String homeTeamName, String awayTeamName) {
 
-        idIterator += 1;
+        idCounter += 1;
         Match newMatch = Match.builder()
-                .id(idIterator)
+                .id(idCounter)
                 .homeTeam(new Team(homeTeamName))
                 .awayTeam(new Team(awayTeamName))
                 .homeTeamGoals(0)
                 .awayTeamGoals(0)
-                .startDateTime(LocalDateTime.now().plusSeconds(idIterator))
+                .startDateTime(LocalDateTime.now().plusSeconds(idCounter))
                 .build();
         ongoingMatches.add(newMatch);
 
@@ -63,7 +63,7 @@ public class ScoreboardService {
         }
 
         if (ongoingMatches.isEmpty()) {
-            idIterator = 0;
+            idCounter = 0;
         }
 
         return ongoingMatches;
